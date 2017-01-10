@@ -92,10 +92,13 @@ if brew list | grep -Fq brew-cask; then
   fancy_echo "Uninstalling old Homebrew-Cask ..."
   brew uninstall --force brew-cask
 fi
-
 fancy_echo "Updating Homebrew formulae ..."
 brew update
+brew install mas
+mas install 803453959
 brew bundle --file=- <<EOF
+cask_args appdir: "/Applications"
+tap "caskroom/cask"
 tap "thoughtbot/formulae"
 tap "homebrew/services"
 
@@ -110,12 +113,21 @@ brew "tmux"
 brew "vim"
 brew "zsh"
 
+cask "atom"
+cask "github-desktop"
+cask "google-chrome"
+cask "virtualbox"
+cask "vagrant"
+cask "odrive"
+cask 'launchrocket'
+cask 'adium'
+
 # Heroku
-brew "heroku-toolbelt"
-brew "parity"
+#brew "heroku-toolbelt"
+#brew "parity"
 
 # GitHub
-brew "hub"
+#brew "hub"
 
 # Image manipulation
 brew "imagemagick"
@@ -125,12 +137,14 @@ brew "qt"
 
 # Programming languages
 brew "libyaml" # should come after openssl
-brew "node"
+brew "nodenv"
+brew "node-build"
 brew "rbenv"
 brew "ruby-build"
 
 # Databases
 brew "postgres", restart_service: true
+brew "memcached", restart_service: true
 brew "redis", restart_service: true
 EOF
 
@@ -155,6 +169,24 @@ gem_install_or_update 'bundler'
 number_of_cores=$(sysctl -n hw.ncpu)
 bundle config --global jobs $((number_of_cores - 1))
 
+# SETUP POWDER
+fancy_echo "Setting up Powder & Pow"
+gem_install_or_update 'powder'
+rbenv rehash
+powder install
+fancy_echo "Completed Powder Setup"
+
+fancy_echo "Configuring Node ..."
+
+node_version="7.4.0"
+# shellcheck disable=SC2016
+append_to_zshrc 'eval "$(nodenv init - --no-rehash)"' 1
+eval "$(nodenv init -)"
+nodenv install -s "$node_version"
+nodenv global "$node_version"
+nodenv shell "$node_version"
+
+fancy_echo "Completed successfully!"
 if [ -f "$HOME/.laptop.local" ]; then
   fancy_echo "Running your customizations from ~/.laptop.local ..."
   # shellcheck disable=SC1090
