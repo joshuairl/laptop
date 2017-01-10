@@ -119,6 +119,7 @@ cask "google-chrome"
 cask "virtualbox"
 cask "vagrant"
 cask "odrive"
+cask "sketch"
 cask 'launchrocket'
 cask 'adium'
 
@@ -141,12 +142,18 @@ brew "nodenv"
 brew "node-build"
 brew "rbenv"
 brew "ruby-build"
-
+brew "watchman"
 # Databases
 brew "postgres", restart_service: true
 brew "memcached", restart_service: true
 brew "redis", restart_service: true
 EOF
+
+
+fancy_echo "Configure Atom Extensions"
+apm install atom-handlebars
+apm install atom-beautify
+apm install remote-sync
 
 fancy_echo "Configuring Ruby ..."
 find_latest_ruby() {
@@ -185,6 +192,21 @@ eval "$(nodenv init -)"
 nodenv install -s "$node_version"
 nodenv global "$node_version"
 nodenv shell "$node_version"
+
+fancy_echo "Installing Node Packages"
+npm install bower -g
+npm install ember-cli -g
+
+fancy_echo "Configuring Projects Directory"
+mkdir -p "$HOME/Projects"
+
+fancy_echo "Cloning current projects..."
+if [ ! -d "$HOME/Projects/simplemeals" ] ; then
+    git clone git@git.ewscloud.com:jfrountree/simplemeals-web.git ~/Projects/simplemeals
+fi
+if [ ! -d "$HOME/Projects/decodedc" ] ; then
+    git clone git@git.ewscloud.com:digital-group/decodedc.git ~/Projects/decodedc
+fi
 
 fancy_echo "Completed successfully!"
 if [ -f "$HOME/.laptop.local" ]; then
