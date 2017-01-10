@@ -135,6 +135,7 @@ brew "imagemagick"
 
 # Testing
 brew "qt"
+brew "ssh-copy-id"
 
 # Programming languages
 brew "libyaml" # should come after openssl
