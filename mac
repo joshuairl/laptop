@@ -122,6 +122,7 @@ cask "odrive"
 cask "sketch"
 cask 'launchrocket'
 cask 'adium'
+cask 'postgres'
 
 # Heroku
 #brew "heroku-toolbelt"
@@ -143,6 +144,8 @@ brew "nodenv"
 brew "node-build"
 brew "rbenv"
 brew "ruby-build"
+brew "pyenv"
+brew "pyenv-virtualenv"
 brew "watchman"
 # Databases
 brew "postgres", restart_service: true
@@ -155,6 +158,24 @@ fancy_echo "Configure Atom Extensions"
 apm install atom-handlebars
 apm install atom-beautify
 apm install remote-sync
+
+fancy_echo "Configuring Python ..."
+find_latest_python() {
+  pyenv install -l | grep -v - | tail -1 | sed -e 's/^ *//'
+}
+
+python_version="$(find_latest_python)"
+# shellcheck disable=SC2016
+append_to_zshrc 'eval "$(pyenv init - --no-rehash)"' 1
+eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
+
+if ! pyenv versions | grep -Fq "$python_version"; then
+  pyenv install "$python_version"
+fi
+
+pyenv global "$python_version"
+pyenv shell "$python_version"
 
 fancy_echo "Configuring Ruby ..."
 find_latest_ruby() {
