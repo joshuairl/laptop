@@ -58,11 +58,26 @@ else
   sudo chown -R "$LOGNAME:admin" "$HOMEBREW_PREFIX"
 fi
 
+update_shell() {
+  local shell_path;
+  shell_path="$(which zsh)"
+
+  fancy_echo "Changing your shell to zsh ..."
+  if ! grep "$shell_path" /etc/shells > /dev/null 2>&1 ; then
+    fancy_echo "Adding '$shell_path' to /etc/shells"
+    sudo sh -c "echo $shell_path >> /etc/shells"
+  fi
+  sudo chsh -s "$shell_path" "$USER"
+}
+
 case "$SHELL" in
-  */zsh) : ;;
+  */zsh)
+    if [ "$(which zsh)" != '/usr/local/bin/zsh' ] ; then
+      update_shell
+    fi
+    ;;
   *)
-    fancy_echo "Changing your shell to zsh ..."
-      chsh -s "$(which zsh)"
+    update_shell
     ;;
 esac
 
@@ -71,7 +86,6 @@ gem_install_or_update() {
     gem update "$@"
   else
     gem install "$@"
-    rbenv rehash
   fi
 }
 
@@ -92,18 +106,17 @@ if brew list | grep -Fq brew-cask; then
   fancy_echo "Uninstalling old Homebrew-Cask ..."
   brew uninstall --force brew-cask
 fi
+
 fancy_echo "Updating Homebrew formulae ..."
-brew update
-brew install mas
-mas install 803453959
+brew update --force # https://github.com/Homebrew/brew/issues/1151
 brew bundle --file=- <<EOF
-cask_args appdir: "/Applications"
-tap "caskroom/cask"
 tap "thoughtbot/formulae"
 tap "homebrew/services"
+tap "universal-ctags/universal-ctags"
+tap "caskroom/cask"
 
 # Unix
-brew "ctags"
+brew "universal-ctags", args: ["HEAD"]
 brew "git"
 brew "openssl"
 brew "rcm"
@@ -111,126 +124,85 @@ brew "reattach-to-user-namespace"
 brew "the_silver_searcher"
 brew "tmux"
 brew "vim"
+brew "watchman"
 brew "zsh"
 
-cask "atom"
-cask "github-desktop"
-cask "google-chrome"
-cask "virtualbox"
-cask "vagrant"
-cask "odrive"
-cask "sketch"
-cask 'launchrocket'
-cask 'adium'
-cask 'postgres'
-
 # Heroku
-#brew "heroku-toolbelt"
-#brew "parity"
+brew "heroku"
+brew "parity"
 
 # GitHub
-#brew "hub"
+brew "hub"
 
 # Image manipulation
 brew "imagemagick"
 
 # Testing
-brew "qt"
-brew "ssh-copy-id"
+brew "qt@5.5" if MacOS::Xcode.installed?
 
-# Programming languages
+# Programming language prerequisites and package managers
 brew "libyaml" # should come after openssl
-brew "nodenv"
-brew "node-build"
-brew "rbenv"
-brew "ruby-build"
-brew "pyenv"
-brew "pyenv-virtualenv"
-brew "watchman"
+brew "coreutils"
+brew "yarn"
+cask "gpgtools"
+
 # Databases
-brew "postgres", restart_service: true
-brew "memcached", restart_service: true
-brew "redis", restart_service: true
+brew "postgres", restart_service: :changed
+brew "redis", restart_service: :changed
 EOF
 
-
-fancy_echo "Configure Atom Extensions"
-apm install atom-handlebars
-apm install atom-beautify
-apm install remote-sync
-
-fancy_echo "Configuring Python ..."
-find_latest_python() {
-  pyenv install -l | grep -v - | tail -1 | sed -e 's/^ *//'
-}
-
-python_version="$(find_latest_python)"
-# shellcheck disable=SC2016
-append_to_zshrc 'eval "$(pyenv init - --no-rehash)"' 1
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
-
-if ! pyenv versions | grep -Fq "$python_version"; then
-  pyenv install "$python_version"
+if brew list | grep --silent "qt@5.5"; then
+  fancy_echo "Symlink qmake binary to /usr/local/bin for Capybara Webkit..."
+  brew unlink qt@5.5
+  brew link --force qt@5.5
 fi
 
-pyenv global "$python_version"
-pyenv shell "$python_version"
+fancy_echo "Update heroku binary..."
+brew unlink heroku
+brew link --force heroku
 
-fancy_echo "Configuring Ruby ..."
-find_latest_ruby() {
-  rbenv install -l | grep -v - | tail -1 | sed -e 's/^ *//'
-}
-
-ruby_version="$(find_latest_ruby)"
-# shellcheck disable=SC2016
-append_to_zshrc 'eval "$(rbenv init - --no-rehash)"' 1
-eval "$(rbenv init -)"
-
-if ! rbenv versions | grep -Fq "$ruby_version"; then
-  RUBY_CONFIGURE_OPTS=--with-openssl-dir=/usr/local/opt/openssl rbenv install -s "$ruby_version"
+fancy_echo "Configuring asdf version manager..."
+if [ ! -d "$HOME/.asdf" ]; then
+  git clone https://github.com/asdf-vm/asdf.git ~/.asdf --branch v0.3.0
+  append_to_zshrc "source $HOME/.asdf/asdf.sh" 1
 fi
 
-rbenv global "$ruby_version"
-rbenv shell "$ruby_version"
+install_asdf_plugin() {
+  local name="$1"
+  local url="$2"
+
+  if ! asdf plugin-list | grep -Fq "$name"; then
+    asdf plugin-add "$name" "$url"
+  fi
+}
+
+# shellcheck disable=SC1090
+source "$HOME/.asdf/asdf.sh"
+install_asdf_plugin "ruby" "https://github.com/asdf-vm/asdf-ruby.git"
+install_asdf_plugin "nodejs" "https://github.com/asdf-vm/asdf-nodejs.git"
+
+install_asdf_language() {
+  local language="$1"
+  local version
+  version="$(asdf list-all "$language" | tail -1)"
+
+  if ! asdf list "$language" | grep -Fq "$version"; then
+    asdf install "$language" "$version"
+    asdf global "$language" "$version"
+  fi
+}
+
+fancy_echo "Installing latest Ruby..."
+install_asdf_language "ruby"
 gem update --system
-gem_install_or_update 'bundler'
+gem_install_or_update "bundler"
 number_of_cores=$(sysctl -n hw.ncpu)
 bundle config --global jobs $((number_of_cores - 1))
 
-# SETUP POWDER
-fancy_echo "Setting up Powder & Pow"
-gem_install_or_update 'powder'
-rbenv rehash
-powder install
-fancy_echo "Completed Powder Setup"
+fancy_echo "Installing latest Node..."
+bash "$HOME/.asdf/plugins/nodejs/bin/import-release-team-keyring"
+install_asdf_language "nodejs"
 
-fancy_echo "Configuring Node ..."
-
-node_version="7.4.0"
-# shellcheck disable=SC2016
-append_to_zshrc 'eval "$(nodenv init - --no-rehash)"' 1
-eval "$(nodenv init -)"
-nodenv install -s "$node_version"
-nodenv global "$node_version"
-nodenv shell "$node_version"
-
-fancy_echo "Installing Node Packages"
-npm install bower -g
-npm install ember-cli -g
-
-fancy_echo "Configuring Projects Directory"
-mkdir -p "$HOME/Projects"
-
-fancy_echo "Cloning current projects..."
-if [ ! -d "$HOME/Projects/simplemeals" ] ; then
-    git clone git@git.ewscloud.com:jfrountree/simplemeals-web.git ~/Projects/simplemeals
-fi
-if [ ! -d "$HOME/Projects/decodedc" ] ; then
-    git clone git@git.ewscloud.com:digital-group/decodedc.git ~/Projects/decodedc
-fi
-
-fancy_echo "Completed successfully!"
 if [ -f "$HOME/.laptop.local" ]; then
   fancy_echo "Running your customizations from ~/.laptop.local ..."
   # shellcheck disable=SC1090
