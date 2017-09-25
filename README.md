@@ -1,7 +1,7 @@
 Laptop
 ======
 
-Laptop is a script to set up an macOS laptop for web development.
+Laptop is a script to set up an macOS laptop for web and mobile development.
 
 It can be run multiple times on the same machine safely.
 It installs, upgrades, or skips packages
@@ -15,19 +15,36 @@ We support:
 * macOS Mavericks (10.9)
 * macOS Yosemite (10.10)
 * macOS El Capitan (10.11)
+* macOS Sierra (10.12)
 
-Older versions may work but aren't regularly tested. Bug reports for older
-versions are welcome.
+Older versions may work but aren't regularly tested.
+Bug reports for older versions are welcome.
 
 Install
 -------
 
-Download, review, then execute the script:
+Download the script:
 
 ```sh
 curl --remote-name https://raw.githubusercontent.com/thoughtbot/laptop/master/mac
+```
+
+Review the script (avoid running scripts you haven't read!):
+
+```sh
 less mac
+```
+
+Execute the downloaded script:
+
+```sh
 sh mac 2>&1 | tee ~/laptop.log
+```
+
+Optionally, review the log:
+
+```sh
+less ~/laptop.log
 ```
 
 Optionally, [install thoughtbot/dotfiles][dotfiles].
@@ -60,6 +77,7 @@ Unix tools:
 * [RCM] for managing company and personal dotfiles
 * [The Silver Searcher] for finding things in files
 * [Tmux] for saving project state and switching between projects
+* [Watchman] for watching for filesystem events
 * [Zsh] as your shell
 
 [Exuberant Ctags]: http://ctags.sourceforge.net/
@@ -68,13 +86,14 @@ Unix tools:
 [RCM]: https://github.com/thoughtbot/rcm
 [The Silver Searcher]: https://github.com/ggreer/the_silver_searcher
 [Tmux]: http://tmux.github.io/
+[Watchman]: https://facebook.github.io/watchman/
 [Zsh]: http://www.zsh.org/
 
 Heroku tools:
 
-* [Heroku Toolbelt] and [Parity] for interacting with the Heroku API
+* [Heroku CLI] and [Parity] for interacting with the Heroku API
 
-[Heroku Toolbelt]: https://toolbelt.heroku.com/
+[Heroku CLI]: https://devcenter.heroku.com/articles/heroku-cli
 [Parity]: https://github.com/thoughtbot/parity
 
 GitHub tools:
@@ -89,25 +108,26 @@ Image tools:
 
 Testing tools:
 
-* [Qt] for headless JavaScript testing via Capybara Webkit
+* [Qt 5] for headless JavaScript testing via [Capybara Webkit]
 
-[Qt]: http://qt-project.org/
+[Qt 5]: http://qt-project.org/
+[Capybara Webkit]: https://github.com/thoughtbot/capybara-webkit
 
-Programming languages and configuration:
+Programming languages, package managers, and configuration:
 
+* [ASDF] for managing programming language versions
 * [Bundler] for managing Ruby libraries
 * [Node.js] and [NPM], for running apps and installing JavaScript packages
-* [Rbenv] for managing versions of Ruby
-* [Ruby Build] for installing Rubies
 * [Ruby] stable for writing general-purpose code
+* [Yarn] for managing JavaScript packages
 
 [Bundler]: http://bundler.io/
 [ImageMagick]: http://www.imagemagick.org/
 [Node.js]: http://nodejs.org/
 [NPM]: https://www.npmjs.org/
-[Rbenv]: https://github.com/sstephenson/rbenv
-[Ruby Build]: https://github.com/sstephenson/ruby-build
+[ASDF]: https://github.com/asdf-vm/asdf
 [Ruby]: https://www.ruby-lang.org/en/
+[Yarn]: https://yarnpkg.com/en/
 
 Databases:
 
@@ -207,7 +227,7 @@ and may be redistributed under the terms specified in the [LICENSE] file.
 About thoughtbot
 ----------------
 
-![thoughtbot](https://thoughtbot.com/logo.png)
+![thoughtbot](http://presskit.thoughtbot.com/images/thoughtbot-logo-for-readmes.svg)
 
 Laptop is maintained and funded by thoughtbot, inc.
 The names and logos for thoughtbot are trademarks of thoughtbot, inc.
